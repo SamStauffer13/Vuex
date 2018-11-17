@@ -1,5 +1,13 @@
 
 <style>
+body {
+  text-align: center;
+}
+ol {
+  max-width: 25em;
+  text-align: left;
+  margin: 0 auto;
+}
 </style>
 
 <template>
@@ -11,12 +19,22 @@
     <div @click="remove"> Remove </div>
     <br>
     <a href="https://vuex.vuejs.org/guide/state.html"> using Vuex </a>
+    <br>
+    <h1>Goalz</h1>
+    <ol>      
+      <li>Top off water in Aquarium</li>
+      <li>Load dishwasher</li>
+      <li>Mount sidebar to undercarrage of desk</li>
+      <li>Return sheets and buy comfortor</li>
+      <li>Wallmart: half and half, thick pasta noods, batteries for smoke alarm, glass bowls, bourbon, plants</li>
+      <li>Hardware store: drill press and furnace filter</li>
+      <li>Mental and Physical health app, background lofi video div with transparent todo app overlay.</li>
+    </ol>
     </div>    
 </template>
 
 <script>
 import Vuex from "vuex";
-import mapState  from "vuex";
 import Vue from "vue";
 
 Vue.use(Vuex);
@@ -38,23 +56,16 @@ const child1 = {
 };
 
 const child2 = {
-//   computed: mapState({
-//       count: 'count'
-//   }),
+  computed: Vuex.mapState(["count"]),
   render: function(createElement) {
-    return createElement("h2", this.$store.state.count);
+    return createElement("h2", this.count);
   }
 };
 
 export default {
   store,
   components: { child1, child2 },
-  computed: {
-    count: () => store.state.count
-  },
-  methods: {
-    add: () => store.commit("add"),
-    remove: () => store.commit("remove")
-  }
+  computed: Vuex.mapState(["count"]),
+  methods: Vuex.mapMutations(["add", "remove"])
 };
 </script>
