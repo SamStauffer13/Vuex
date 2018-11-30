@@ -21,12 +21,10 @@ ol {
     <a href="https://vuex.vuejs.org/guide/state.html"> using Vuex </a>
     <br>
     <h1>Goalz</h1>
-    <ol>      
+    <ol>
       <li>Top off water in Aquarium</li>
       <li>Load dishwasher</li>
-      <li>Mount sidebar to undercarrage of desk</li>
-      <li>Return sheets and buy comfortor</li>
-      <li>Wallmart: half and half, thick pasta noods, batteries for smoke alarm, glass bowls, bourbon, plants</li>
+      <li>Mount sidebar to undercarrage of desk</li>      
       <li>Hardware store: drill press and furnace filter</li>
       <li>Mental and Physical health app, background lofi video div with transparent todo app overlay.</li>
     </ol>
@@ -68,4 +66,6 @@ export default {
   computed: Vuex.mapState(["count"]),
   methods: Vuex.mapMutations(["add", "remove"])
 };
+
+// todo
 </script>
