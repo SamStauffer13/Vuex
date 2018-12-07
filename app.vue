@@ -40,7 +40,7 @@ import Vuex from "vuex";
 
 Vue.use(Vuex);
 
-// goals: list of food elements components
+// goals: list of food elements components + calories turn colors based off numbers + use special font + workout is displayed next to weight goalz
 
 const store = new Vuex.Store({
   state: {
