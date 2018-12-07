@@ -3,69 +3,86 @@
 body {
   text-align: center;
 }
-ol {
-  max-width: 25em;
-  text-align: left;
-  margin: 0 auto;
-}
 </style>
 
 <template>
-    <div>       
-    <child1></child1>
-    <child2></child2>
-    <h3> {{ count }}</h3>
-    <div @click="add"> Add </div>
-    <div @click="remove"> Remove </div>
-    <br>
-    <a href="https://vuex.vuejs.org/guide/state.html"> using Vuex </a>
-    <br>
-    <h1>Goalz</h1>
-    <ol>
-      <li>Top off water in Aquarium</li>
-      <li>Load dishwasher</li>
-      <li>Mount sidebar to undercarrage of desk</li>      
-      <li>Hardware store: drill press and furnace filter</li>
-      <li>Mental and Physical health app, background lofi video div with transparent todo app overlay.</li>
-    </ol>
-    </div>    
+  <div>
+    <input :value="weight" @input="update_weight">
+    <input :value="weight_lifted" @input="update_weight_lifted">
+
+    <div>{{ protein }} calories of protein</div>
+    <a href="https://vuex.vuejs.org/guide/state.html">using Vuex</a>
+  </div>
 </template>
 
 <script>
-import Vuex from "vuex";
 import Vue from "vue";
+import Vuex from "vuex";
 
 Vue.use(Vuex);
 
+// goals:
+// model binding of today I lifted
+// today I lifted only shows on lift days
+// list of random elements is rendered
+// add running counter of protein on click of element is incremented
+
+// days till next bulk
+// days till next cut
+// days till next milestone
+
 const store = new Vuex.Store({
   state: {
-    count: 0
+    weight: 200,
+    weight_lifted: 100
+  },
+  getters: {
+    _calories: (state, getters) => (cut, bulk) => {
+      const percentage = getters.body_needs_maitenance ? bulk : cut;
+      return Math.round(getters.caloric_intake * percentage);
+    },
+    body_needs_maitenance: () => {
+      const date = new Date();
+      const today = date.getDay();
+      const maitenanceMonth = (date.getMonth + 1) % 3 === 0;
+      const maitenanceDay = 5;
+      return today === maitenanceDay || maitenanceMonth;
+    },
+    caloric_intake: (state, getters) => {
+      const percentage = getters.body_needs_maitenance ? 20 : 30;
+      return Math.round(state.weight * percentage);
+    }
   },
   mutations: {
-    add: state => state.count++,
-    remove: state => state.count--
+    _update_weight: (state, weight) => (state.weight = weight),
+    _update_weight_lifted: (state, weight) => (state.weight_lifted = weight)
   }
 });
 
-const child1 = {
-  render: function(createElement) {
-    return createElement("h1", this.$store.state.count);
-  }
-};
-
-const child2 = {
-  computed: Vuex.mapState(["count"]),
-  render: function(createElement) {
-    return createElement("h2", this.count);
-  }
-};
-
 export default {
   store,
-  components: { child1, child2 },
-  computed: Vuex.mapState(["count"]),
-  methods: Vuex.mapMutations(["add", "remove"])
+  components: {},
+  computed: {
+    ...Vuex.mapState(["weight", "weight_lifted"]),
+    ...Vuex.mapGetters(["_calories"]),
+    protein() {
+      return this._calories(0.25, 0.52);
+    },
+    carbs() {
+      return this._calories(0.3, 0.9);
+    },
+    fats() {
+      return this._calories(0.4, 0.6);
+    }
+  },
+  methods: {
+    ...Vuex.mapMutations(["_update_weight", "_update_weight_lifted"]),
+    update_weight(e) {
+      this._update_weight(e.target.value);
+    },
+    update_weight_lifted(e) {
+      this._update_weight_lifted(e.target.value);
+    }
+  }
 };
-
-// todo
 </script>
