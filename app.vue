@@ -62,6 +62,7 @@ import Vuex from "vuex";
 
 Vue.use(Vuex);
 
+<<<<<<< HEAD
 // goals: list of food elements components
 // update 'today I lifted' to include workout excorsize'
 // make milestone better: have a timer counting down to the day we reach strength goals!
@@ -69,6 +70,9 @@ Vue.use(Vuex);
 // keep it up and you'll weigh {target_weight} pounds by {target_date}
 // keep it up and you'll be lifting {target_lift_weight} pounds by {target_date}
 // scroll to each section (mobile first idea: buttery smooth transitions rather than scrolling)
+=======
+// goals: list of food elements components + calories turn colors based off numbers + use special font + workout is displayed next to weight goalz
+>>>>>>> b5e2efe47f19a8d4c8a13158533c873a3d6f7c34
 
 const store = new Vuex.Store({
   state: {
