@@ -4,6 +4,7 @@
   font-family: "Nikoleta";
   src: url("./NIKOLETA.ttf");
 }
+
 body {
   font-family: "Nikoleta";
   text-align: center;
@@ -12,15 +13,27 @@ body {
 
 input {
   font-family: "Nikoleta";
-  font-weight: bold;
   outline: none;
   border: 0;
+}
+
+.weight {
+  font-weight: bold;
   width: 35px;
   font-size: 20px;
 }
 
-.food{
-   cursor:pointer;
+.search {
+  width: 200px;
+  font-size: 20px;
+}
+
+.failed {
+  color: red;
+}
+
+.clickable {
+  cursor: pointer;
 }
 </style>
 
@@ -28,30 +41,60 @@ input {
   <div>
     <div>
       I weigh
-      <input :value="weight" @input="update_weight">and want to
-      <b @click="update_body_needs_maitenance">{{intent_verbage}}</b> my weight.
+      <input class="weight" :value="weight" @input="_updateWeight">and want to
+      <b>decrease</b> my weight.
     </div>
     <br>
-    <div>Today I've consumed {{calories_from_protein + calories_from_fat + calories_from_carbs}} calories</div>
-    <span class="food" @click="update_calories_consumed({protein: 233, fat: 367, carbs: 0})">Steak, </span>
-    <span class="food" @click="update_calories_consumed({protein: 28, fat: 55, carbs: 29})">Chicken Finger, </span>
-    <span class="food" @click="update_calories_consumed({protein: 16, fat: 2, carbs: 142})">Baked Potato, </span>
-    <span class="food" @click="update_calories_consumed({protein: 0, fat: 0, carbs: 140})">bottle of coke</span>
-    <br>  
-    <div v-if="p > 0 || f > 0 || c > 0" >I still need</div>
-    <div v-if="p > 0">{{p}} calories of protein</div>
-    <div v-if="f > 0">{{f}} calories of fats</div>
-    <div v-if="c > 0">{{c}} calories of carbs</div>
+    <div>
+      which means I need to consume about
+      <b>{{caloricIntake}}</b> calories today
+    </div>
     <br>
-    <div v-if="p < 0">Overate <span style="color:red"> {{ Math.abs(p) }} </span> calories of protein</div>   
-    <div v-if="f < 0">Overate <span style="color:red"> {{ Math.abs(f) }} </span> calories of fat</div>   
-    <div v-if="c < 0">Overate <span style="color:red"> {{ Math.abs(c) }} </span> calories of carbs</div>   
 
+    <div>
+      Today I consumed
+      <span :class="{failed: caloriesConsumed > caloricIntake}">{{caloriesConsumed}}</span> calories from...
+    </div>
+
+    <div v-for="food in foodzConsumed" :key="food.name+food.qty">
+      <span>{{food.qty}} {{food.name}}</span> (
+      <span class="clickable" @click="addFoodzEaten(food)">+</span>/
+      <span class="clickable" @click="subtractFoodzEaten(food)">-</span>)
+    </div>
     <br>
-    <div v-if="is_workout_day">
-      Today I lifted 6 sets of
-      <input :value="weight_lifted" @input="update_weight_lifted"> pounds
-      <div>next milestone is in {{ weeks_left }} weeks</div>
+
+    <input
+      class="search"
+      :value="search"
+      @input="_updateSearch"
+      placeholder="Search Foodz..."
+      autofocus
+    >
+
+    <div v-for="food in foodz" :key="food.name">
+      <span class="clickable" @click="addFoodzEaten(food)">{{food.name}}</span>
+    </div>
+    <br>
+    <br>
+
+    <div>I still need
+      <div v-if="proteinRemaining > 0">{{proteinRemaining}} calories of protein</div>
+      <div v-if="carbsRemaining > 0">{{carbsRemaining}} calories of carbs</div>
+      <div v-if="fatRemaining > 0">{{fatRemaining}} calories of fat</div>
+      <br>
+      <div v-if="proteinRemaining < 0">
+        Overate protein by
+        <span style="color:red;">{{ Math.abs(proteinRemaining)}}</span> calories
+      </div>
+      <div v-if="carbsRemaining < 0">
+        Overate carbs by
+        <span style="color:red;">{{ Math.abs(carbsRemaining)}}</span> calories
+      </div>
+      <div v-if="fatRemaining < 0">
+        Overate fat by
+        <span style="color:red;">{{ Math.abs(fatRemaining)}}</span>
+        calories
+      </div>
     </div>
   </div>
 </template>
@@ -60,102 +103,137 @@ input {
 import Vue from "vue";
 import Vuex from "vuex";
 
+// todoz
+// impliment constants instead of magic strings?
+// take a closer look at model binding, I think it's modifying state when it shouldn't
+// use es6 reducer instead of foreach loops
+// show caloric deficit amount explanation next to calories per day
+// add a 'hey you need to burn x number of calories to get back to where you need to be, modified by today I lifed and today I ran
+// add a food to the foodz list function
+// add a strikethrough to protein/fat/carb if we've exceeded daily calories
+
 Vue.use(Vuex);
 
-<<<<<<< HEAD
-// goals: list of food elements components
-// update 'today I lifted' to include workout excorsize'
-// make milestone better: have a timer counting down to the day we reach strength goals!
-// make weight better: have a timer counting down to the day we reach weight goals (overeating affects it)!
-// keep it up and you'll weigh {target_weight} pounds by {target_date}
-// keep it up and you'll be lifting {target_lift_weight} pounds by {target_date}
-// scroll to each section (mobile first idea: buttery smooth transitions rather than scrolling)
-=======
-// goals: list of food elements components + calories turn colors based off numbers + use special font + workout is displayed next to weight goalz
->>>>>>> b5e2efe47f19a8d4c8a13158533c873a3d6f7c34
+class Food {
+  constructor(name, protein, fats, carbs, qty = 0) {
+    this.name = name;
+    this.protein = protein;
+    this.carbs = carbs;
+    this.fats = fats;
+    this.qty = qty;
+    this.aliases = []; // for fuzzy search
+  }
+}
+
+const f = [
+  new Food("Steak", 233, 367, 0),
+  new Food("Chicken Finger", 28, 55, 29),
+  new Food("Baked Potato", 16, 2, 142),
+  new Food("Glass Of Coke", 0, 0, 142),
+
+  new Food("Slice of Pizza", 0, 0, 0),
+  new Food("Glass of Bourbon", 0, 0, 0),
+  new Food("Handful of Chips", 0, 0, 0)
+];
 
 const store = new Vuex.Store({
   state: {
     weight: 150,
-    weight_lifted: 100,
-    calories_from_protein: 0,
-    calories_from_fat: 0,
-    calories_from_carbs: 0,
-    is_maitenance_period: false
+    foods: f,
+    search: ""
   },
   getters: {
     today: () => new Date().getDay(),
 
     month: () => new Date().getMonth(),
 
-    is_workout_day: (state, getters) => [1, 3, 5].includes(getters.today),
+    needsWorkout: (state, getters) => [1, 3, 5].includes(getters.today),
 
-    body_needs_maitenance: (state, getters) =>
-      state.is_maitenance_period ||
-      (getters.today === 5 || (getters.month + 1) % 3 === 0),
-
-    protein: (state, getters) =>
-      getters.algorithm(0.27, 0.25, getters.caloric_intake),
-
-    p: (state, getters) =>
-      Math.round(getters.protein - state.calories_from_protein),
-    c: (state, getters) =>
-      Math.round(getters.carbs - state.calories_from_carbs),
-    f: (state, getters) =>
-      Math.round(getters.fats - state.calories_from_fat),
-
-    carbs: (state, getters) =>
-      getters.algorithm(0.45, 0.4, getters.caloric_intake),
-
-    fats: (state, getters) =>
-      getters.algorithm(0.33, 0.3, getters.caloric_intake),
-
-    caloric_intake: (state, getters) => getters.algorithm(12, 15, state.weight),
-
-    weeks_left: (state, getters) => {
-      const goal = 200;
-
-      if (state.weight_lifted >= goal) return 0;
-
-      const whats_left = (goal - state.weight_lifted) / 5;
-
-      return Math.round(whats_left);
+    isRefillDay(state, getters) {
+      return getters.today === 5;
     },
-
-    intent_verbage(state) {
-      return state.is_maitenance_period ? "Maintain" : "Decrease";
+    isRefillMonth(state, getters) {
+      return (getters.month + 1) % 3 === 0;
     },
-
-    algorithm: (state, getters) => (cut, bulk, amount) => {
-      const percentage = getters.body_needs_maitenance ? bulk : cut;
-      return Math.round(amount * percentage);
+    needsCalories(state, getters) {
+      return getters.isRefillDay || getters.isRefillMonth;
+    },
+    protein(state, getters) {
+      return getters.algorithm(0.27, 0.25, getters.caloricIntake);
+    },
+    proteinConsumed(state, getters) {
+      let sum = 0;
+      getters.foodzConsumed.forEach(food => {
+        sum += food.protein * food.qty;
+      });
+      return sum;
+    },
+    proteinRemaining(state, getters) {
+      return Math.round(getters.protein - getters.proteinConsumed);
+    },
+    carbs(state, getters) {
+      return getters.algorithm(0.45, 0.4, getters.caloricIntake);
+    },
+    carbsConsumed(state, getters) {
+      let sum = 0;
+      getters.foodzConsumed.forEach(food => {
+        sum += food.carbs * food.qty;
+      });
+      return sum;
+    },
+    carbsRemaining(state, getters) {
+      return Math.round(getters.carbs - getters.carbsConsumed);
+    },
+    fats(state, getters) {
+      return getters.algorithm(0.33, 0.3, getters.caloricIntake);
+    },
+    fatsConsumed(state, getters) {
+      let sum = 0;
+      getters.foodzConsumed.forEach(food => {
+        sum += food.fats * food.qty;
+      });
+      return sum;
+    },
+    fatRemaining(state, getters) {
+      return Math.round(getters.fats - getters.fatsConsumed);
+    },
+    caloriesConsumed(state, getters) {
+      return (
+        getters.proteinConsumed + getters.carbsConsumed + getters.fatsConsumed
+      );
+    },
+    caloriesRemaining(state, getters) {
+      return getters.caloricIntake - getters.caloriesConsumed;
+    },
+    caloricIntake(state, getters) {
+      return getters.algorithm(12, 15, state.weight);
+    },
+    algorithm: (state, getters) => (a, b, c) => {
+      return Math.round(c * (getters.needsCalories ? a : b));
+    },
+    foodz(state) {
+      if (state.search === "") return [];
+      return state.foods.filter(food =>
+        food.name.toLowerCase().includes(state.search.toLowerCase())
+      );
+    },
+    foodzConsumed(state) {
+      return state.foods.filter(food => food.qty > 0);
     }
   },
   mutations: {
-    _update_weight: (state, weight) => (state.weight = weight),
-
-    _update_weight_lifted: (state, weight) => (state.weight_lifted = weight),
-
-    _add_calories_from_protein: (state, calories) =>
-      (state.calories_from_protein += calories),
-
-    _subtract_calories_from_protein: (state, calories) =>
-      (state.calories_from_protein -= calories),
-
-    _add_calories_from_fat: (state, calories) =>
-      (state.calories_from_fat += calories),
-
-    _subtract_calories_from_fat: (state, calories) =>
-      (state.calories_from_fat -= calories),
-
-    _add_calories_from_carbs: (state, calories) =>
-      (state.calories_from_carbs += calories),
-
-    _subtract_calories_from_carbs: (state, calories) =>
-      (state.calories_from_carbs -= calories),
-
-    _update_body_needs_maitenance: state =>
-      (state.is_maitenance_period = !state.is_maitenance_period)
+    updateWeight(state, weight) {
+      state.weight = weight;
+    },
+    updateSearch(state, search) {
+      state.search = search;
+    },
+    addFoodzEaten(state, food) {
+      state.foods.find(meal => meal.name === food.name).qty++;
+    },
+    subtractFoodzEaten(state, food) {
+      state.foods.find(meal => meal.name === food.name).qty--;
+    }
   }
 });
 
@@ -163,45 +241,30 @@ export default {
   store,
   components: {},
   computed: {
-    ...Vuex.mapState([
-      "weight",
-      "weight_lifted",
-      "calories_from_protein",
-      "calories_from_fat",
-      "calories_from_carbs"
-    ]),
+    ...Vuex.mapState(["weight", "search"]),
     ...Vuex.mapGetters([
-      "is_workout_day",
-      "protein",
-      "fats",
-      "carbs",
-      "weeks_left",
-      "intent_verbage",
-      "p", "c", "f"
+      "caloricIntake",
+      "fatRemaining",
+      "proteinRemaining",
+      "carbsRemaining",
+      "caloriesConsumed",
+      "caloriesRemaining",
+      "foodz",
+      "foodzConsumed"
     ])
   },
   methods: {
     ...Vuex.mapMutations([
-      "_update_weight",
-      "_update_weight_lifted",
-      "_update_body_needs_maitenance",
-      "_add_calories_from_protein",
-      "_add_calories_from_fat",
-      "_add_calories_from_carbs"
+      "updateWeight",
+      "updateSearch",
+      "addFoodzEaten",
+      "subtractFoodzEaten"
     ]),
-    update_weight(e) {
-      this._update_weight(e.target.value);
+    _updateWeight(e) {
+      this.updateWeight(e.target.value);
     },
-    update_weight_lifted(e) {
-      this._update_weight_lifted(e.target.value);
-    },
-    update_calories_consumed(food) {
-      this._add_calories_from_protein(food.protein);
-      this._add_calories_from_fat(food.fat);
-      this._add_calories_from_carbs(food.carbs);
-    },
-    update_body_needs_maitenance() {
-      this._update_body_needs_maitenance();
+    _updateSearch(e) {
+      this.updateSearch(e.target.value);
     }
   }
 };
